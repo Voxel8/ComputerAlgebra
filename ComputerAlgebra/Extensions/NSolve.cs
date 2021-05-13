@@ -1,9 +1,7 @@
-﻿using System;
+﻿using ComputerAlgebra.LinqCompiler;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using ComputerAlgebra.LinqCompiler;
-using LinqExprs = System.Linq.Expressions;
 using LinqExpr = System.Linq.Expressions.Expression;
 using ParamExpr = System.Linq.Expressions.ParameterExpression;
 
@@ -31,10 +29,7 @@ namespace ComputerAlgebra
         /// <returns></returns>
         public static Dictionary<Expression, Expression> Gradient(this Expression f, IEnumerable<Expression> x)
         {
-            Dictionary<Expression, Expression> gradient = new Dictionary<Expression, Expression>();
-            foreach (Expression j in x)
-                gradient[j] = f.Differentiate(j);
-            return gradient;
+            return x.ToDictionary(i => i, i => f.Differentiate(i));
         }
 
         /// <summary>
@@ -43,11 +38,11 @@ namespace ComputerAlgebra
         /// <param name="F"></param>
         /// <param name="x"></param>
         /// <returns></returns>
-        public static IEnumerable<Dictionary<Expression, Expression>> Jacobian(this IEnumerable<Expression> F, IEnumerable<Expression> x)
+        public static List<Dictionary<Expression, Expression>> Jacobian(this IEnumerable<Expression> F, IEnumerable<Expression> x)
         {
-            return F.Select(i => i.Gradient(x));
+            return F.Select(i => i.Gradient(x)).ToList();
         }
-        
+
         // Use neton's method to solve F(x) = 0, with initial guess x0.
         private static void NewtonsMethod(int M, int N, Func<double[,], double[], double, double> J, double s, double[] x, double Epsilon, int MaxIterations)
         {
@@ -133,7 +128,7 @@ namespace ComputerAlgebra
         {
             int M = F.Count;
             int N = x0.Count;
-            
+
             // Compute JxF, the Jacobian of F.
             List<Dictionary<Expression, Expression>> JxF = Jacobian(F, x0.Select(i => i.Left)).ToList();
 
@@ -235,8 +230,8 @@ namespace ComputerAlgebra
 
         private static Expression EqualToZero(Expression i)
         {
-            if (i is Equal)
-                return ((Equal)i).Left - ((Equal)i).Right;
+            if (i is Equal equal)
+                return equal.Left - equal.Right;
             else
                 return i;
         }

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Diagnostics;
 
 namespace ComputerAlgebra
 {
@@ -13,7 +11,9 @@ namespace ComputerAlgebra
     {
         Euler,
         BackwardEuler,
-        Trapezoid
+        Trapezoid,
+        BackwardDifferenceFormula2,
+        BackwardDifferenceFormula3,
     }
 
     /// <summary>
@@ -48,35 +48,52 @@ namespace ComputerAlgebra
         }
 
         /// <summary>
-        /// Compute expressions for y[t + h] in terms of y[t], the resulting expressions will be implicit for implicit methods.
+        /// Compute expressions for y[t] in terms of y[t - h], the resulting expressions will be implicit for implicit methods.
         /// </summary>
         /// <param name="dy_dt">Equations to solve.</param>
         /// <param name="y">Functions to solve for.</param>
         /// <param name="t">Independent variable.</param>
         /// <param name="h">Step size.</param>
         /// <param name="method">Integration method to use for differential equations.</param>
-        /// <returns>Expressions for y[t + h].</returns>
+        /// <returns>Expressions for y[t].</returns>
         public static IEnumerable<Arrow> NDIntegrate(this IEnumerable<Arrow> dy_dt, Expression t, Expression h, IntegrationMethod method)
-        {            
+        {
             switch (method)
             {
-                // y[t + h] = y[t] + h*f[t, y[t]]
+                // y[t] = y[t - h] + h*f[t - h, y[t - h]]
                 case IntegrationMethod.Euler:
                     return dy_dt.Select(i => Arrow.New(
-                        DOf(i.Left).Evaluate(t, t + h),
-                        DOf(i.Left) + h * i.Right));
+                        DOf(i.Left),
+                        DOf(i.Left).Substitute(t, t - h) + h * i.Right.Substitute(t, t - h)));
 
-                // y[t + h] = y[t] + h*f[t + h, y[t + h]]
+                // y[t] = y[t - h] + h*f[t, y[t]]
                 case IntegrationMethod.BackwardEuler:
                     return dy_dt.Select(i => Arrow.New(
-                        DOf(i.Left).Evaluate(t, t + h),
-                        DOf(i.Left) + h * i.Right.Evaluate(t, t + h)));
+                        DOf(i.Left),
+                        DOf(i.Left).Substitute(t, t - h) + h * i.Right));
 
-                // y[t + h] = y[t] + (h/2)*(f[t, y[t]] + f[t + h, y[t + h]])
+                // y[t] = y[t - h] + (h/2)*(f[t - h, y[t - h]] + f[t, y[t]])
                 case IntegrationMethod.Trapezoid:
                     return dy_dt.Select(i => Arrow.New(
-                        DOf(i.Left).Evaluate(t, t + h),
-                        DOf(i.Left) + (h / 2) * (i.Right + i.Right.Evaluate(t, t + h))));
+                        DOf(i.Left),
+                        DOf(i.Left).Substitute(t, t - h) + (h / 2) * (i.Right.Substitute(t, t - h) + i.Right)));
+
+                // y[t] = (4/3)*y[t - h] - (1/3)y[t - 2h] + (2h/3)*f[t, y[t]]
+                case IntegrationMethod.BackwardDifferenceFormula2:
+                    return dy_dt.Select(i => Arrow.New(
+                        DOf(i.Left),
+                        4 * DOf(i.Left).Substitute(t, t - h) / 3 -
+                        DOf(i.Left).Substitute(t, t - 2 * h) / 3 +
+                        2 * h * i.Right / 3));
+
+                // y[t] = (2/11)*y[t - 3h] - (9/11)*y[t - 2h] + (18/11)*y[t - h] + (6h/11)*f[t, y[t]]
+                case IntegrationMethod.BackwardDifferenceFormula3:
+                    return dy_dt.Select(i => Arrow.New(
+                        DOf(i.Left),
+                        2 * DOf(i.Left).Substitute(t, t - 3 * h) / 11 -
+                        9 * DOf(i.Left).Substitute(t, t - 2 * h) / 11 +
+                        18 * DOf(i.Left).Substitute(t, t - h) / 11 +
+                        6 * h * i.Right / 11));
 
                 default:
                     throw new NotImplementedException(method.ToString());
@@ -84,14 +101,14 @@ namespace ComputerAlgebra
         }
 
         /// <summary>
-        /// Solve a linear system of differential equations for y[t + h] in terms of y[t].
+        /// Solve a linear system of differential equations for y[t] in terms of y[t - h].
         /// </summary>
         /// <param name="f">Equations to solve.</param>
         /// <param name="y">Functions to solve for.</param>
         /// <param name="t">Independent variable.</param>
         /// <param name="h">Step size.</param>
         /// <param name="method">Integration method to use for differential equations.</param>
-        /// <returns>Expressions for y[t + h].</returns>
+        /// <returns>Expressions for y[t].</returns>
         public static List<Arrow> NDSolve(this IEnumerable<Equal> f, IEnumerable<Expression> y, Expression t, Expression h, IntegrationMethod method)
         {
             // Find y' in terms of y.
@@ -103,18 +120,18 @@ namespace ComputerAlgebra
 
             return NDIntegrate(dy_dt, t, h, method)
                 .Select(i => Equal.New(i.Left, i.Right))
-                .Solve(y.Evaluate(t, t + h));
+                .Solve(y);
         }
 
         /// <summary>
-        /// Partially solve a linear system of differential equations for y[t + h] in terms of y[t]. See SolveExtensions.PartialSolve for more information.
+        /// Partially solve a linear system of differential equations for y[t] in terms of y[t - h]. See SolveExtensions.PartialSolve for more information.
         /// </summary>
         /// <param name="f">Equations to solve.</param>
         /// <param name="y">Functions to solve for.</param>
         /// <param name="t">Independent variable.</param>
         /// <param name="h">Step size.</param>
         /// <param name="method">Integration method to use for differential equations.</param>
-        /// <returns>Expressions for y[t + h].</returns>
+        /// <returns>Expressions for y[t].</returns>
         public static List<Arrow> NDPartialSolve(this IEnumerable<Equal> f, IEnumerable<Expression> y, Expression t, Expression h, IntegrationMethod method)
         {
             // Find y' in terms of y.
@@ -126,7 +143,7 @@ namespace ComputerAlgebra
 
             return NDIntegrate(dy_dt, t, h, method)
                 .Select(i => Equal.New(i.Left, i.Right))
-                .PartialSolve(y.Evaluate(t, t + h));
+                .PartialSolve(y);
         }
 
         // Get the expression that x is a derivative of.

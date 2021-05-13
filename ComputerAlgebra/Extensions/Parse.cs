@@ -20,7 +20,7 @@ namespace ComputerAlgebra
     /// </summary>
     class TokenStream
     {
-        static string Escape(params string [] s) 
+        static string Escape(params string[] s)
         {
             StringBuilder S = new StringBuilder();
             foreach (string i in s)
@@ -33,9 +33,9 @@ namespace ComputerAlgebra
             return S.ToString();
         }
 
-        static string Name = @"[a-zA-Z_]\w*";
-        static string Literal = @"[0-9]*[\.,]?[0-9]+([eE][-+]?[0-9]+)?";
-        static Regex token = new Regex(
+        static readonly string Name = @"[a-zA-Z_]\w*";
+        static readonly string Literal = @"[0-9]*[\.,]?[0-9]+([eE][-+]?[0-9]+)?";
+        static readonly Regex token = new Regex(
             "(" + Name + ")|(" + Literal + ")" +
             Escape("==", "=", "!=", ">=", ">", "<=", "<", "~=", "->",
             "+", "-", "*", "/", "^", "'",
@@ -48,7 +48,7 @@ namespace ComputerAlgebra
         /// Tokenize the string s.
         /// </summary>
         /// <param name="s"></param>
-        public TokenStream(string s) 
+        public TokenStream(string s)
         {
             MatchCollection matches = token.Matches(s);
             foreach (Match m in matches)
@@ -58,14 +58,14 @@ namespace ComputerAlgebra
         /// <summary>
         /// Get the current token in the stream.
         /// </summary>
-        public string Tok 
-        { 
-            get 
-            { 
-                if (tokens.Count > 0) 
-                    return tokens.First(); 
-                else 
-                    return "";  
+        public string Tok
+        {
+            get
+            {
+                if (tokens.Count > 0)
+                    return tokens.First();
+                else
+                    return "";
             }
         }
 
@@ -73,10 +73,10 @@ namespace ComputerAlgebra
         /// Remove the current token from the stream and return it.
         /// </summary>
         /// <returns></returns>
-        public string Consume() 
-        { 
-            string tok = Tok;  
-            tokens.RemoveAt(0); 
+        public string Consume()
+        {
+            string tok = Tok;
+            tokens.RemoveAt(0);
             return tok;
         }
 
@@ -85,24 +85,24 @@ namespace ComputerAlgebra
         /// </summary>
         /// <param name="s"></param>
         /// <returns></returns>
-        public string Expect(params string[] Set) 
-        { 
-            if (Set.Contains(Tok)) 
-                return Consume(); 
-            else 
-                throw new ParseException("Expected " + String.Join(", ", Set.Select(i => "'" + i + "'"))); 
+        public string Expect(params string[] Set)
+        {
+            if (Set.Contains(Tok))
+                return Consume();
+            else
+                throw new ParseException("Expected " + String.Join(", ", Set.Select(i => "'" + i + "'")));
         }
 
         /// <summary>
         /// Assert there are no more tokens.
         /// </summary>
-        public void ExpectEnd() 
-        { 
-            if (tokens.Any()) 
-                throw new ParseException("Expected end"); 
+        public void ExpectEnd()
+        {
+            if (tokens.Any())
+                throw new ParseException("Expected end");
         }
     }
-    
+
     /// <summary>
     /// Implements "precedence climbing": http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm#classic
     /// </summary>
@@ -128,9 +128,9 @@ namespace ComputerAlgebra
             tokens = new TokenStream(s);
             Expression t = Exp(0);
             tokens.ExpectEnd();
-            return t;            
+            return t;
         }
-        
+
         //Exp( p ) is
         //    var t : Tree
         //    t := P
@@ -168,7 +168,7 @@ namespace ComputerAlgebra
                     break;
                 }
             }
-            return l;            
+            return l;
         }
 
         // Parse a list of expressions.
@@ -249,12 +249,10 @@ namespace ComputerAlgebra
             else
             {
                 string tok = tokens.Consume();
-                
-                decimal dec = 0;
-                double dbl = 0.0;
-                if (decimal.TryParse(tok, NumberStyles.Float, culture, out dec))
+
+                if (decimal.TryParse(tok, NumberStyles.Float, culture, out decimal dec))
                     return Constant.New(dec);
-                if (double.TryParse(tok, NumberStyles.Float, culture, out dbl))
+                else if (double.TryParse(tok, NumberStyles.Float, culture, out double dbl))
                     return Constant.New(dbl);
                 else if (tok == "True")
                     return Constant.New(true);
@@ -286,7 +284,7 @@ namespace ComputerAlgebra
         private Function Resolve(string Token, IEnumerable<Expression> Args)
         {
             Function resolve = context.LookupFunction(Token, Args).SingleOrDefault();
-            if (!ReferenceEquals(resolve, null))
+            if (!(resolve is null))
                 return resolve;
             else
                 return UnknownFunction.New(Token, Args.Count());
@@ -295,12 +293,12 @@ namespace ComputerAlgebra
         private Expression Resolve(string Token)
         {
             Expression resolve = context.LookupName(Token).Where(i => !(i is Function)).SingleOrDefault();
-            if (!ReferenceEquals(resolve, null))
+            if (!(resolve is null))
                 return resolve;
             else
                 return Variable.New(Token);
         }
-        
+
         static bool IsBinaryOperator(string tok, ref Operator op)
         {
             switch (tok)

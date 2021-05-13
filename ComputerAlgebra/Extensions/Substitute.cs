@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ComputerAlgebra
 {
@@ -17,11 +15,9 @@ namespace ComputerAlgebra
 
         public override Expression Visit(Expression E)
         {
-            Expression xE;
-            if (x0.TryGetValue(E, out xE))
+            if (x0.TryGetValue(E, out Expression xE))
                 return xE;
-            else
-                return base.Visit(E);
+            return base.Visit(E);
         }
 
         protected override Expression VisitCall(Call F)
@@ -38,12 +34,11 @@ namespace ComputerAlgebra
         /// <param name="f"></param>
         /// <param name="x0"></param>
         /// <returns></returns>
-        public static Expression Substitute(this Expression f, IDictionary<Expression, Expression> x0, bool IsTransform = false) 
+        public static Expression Substitute(this Expression f, IDictionary<Expression, Expression> x0, bool IsTransform = false)
         {
             if (x0.Empty())
                 return f;
-            else
-                return new SubstituteVisitor(x0, IsTransform).Visit(f); 
+            return new SubstituteVisitor(x0, IsTransform).Visit(f);
         }
 
         /// <summary>
@@ -75,7 +70,6 @@ namespace ComputerAlgebra
             if (x0.Empty())
                 return f;
             SubstituteVisitor V = new SubstituteVisitor(x0, IsTransform);
-
             return f.Select(i => V.Visit(i));
         }
 

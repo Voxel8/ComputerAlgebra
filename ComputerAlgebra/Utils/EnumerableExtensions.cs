@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace System.Collections.Generic
 {
@@ -36,10 +34,23 @@ namespace System.Collections.Generic
         [DebuggerStepThrough]
         public static List<T> AsList<T>(this IEnumerable<T> This)
         {
-            if (This is List<T>)
-                return (List<T>)This;
-            else
-                return This.ToList();
+            if (This is List<T> list)
+                return list;
+            return This.ToList();
+        }
+
+        /// <summary>
+        /// Cast This to List.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="This"></param>
+        /// <returns></returns>
+        [DebuggerStepThrough]
+        public static T[] AsArray<T>(this IEnumerable<T> This)
+        {
+            if (This is T[] a)
+                return a;
+            return This.ToArray();
         }
 
         /// <summary>
@@ -49,29 +60,18 @@ namespace System.Collections.Generic
         /// <param name="This"></param>
         /// <returns></returns>
         [DebuggerStepThrough]
-        public static IEnumerable<T> AsBuffer<T>(this IEnumerable<T> This)
+        public static IEnumerable<T> Buffer<T>(this IEnumerable<T> This)
         {
+            // Already buffered?
             if (This is T[])
                 return This;
             if (This is List<T>)
                 return This;
-            return This.Buffer();
-        }
-
-        /// <summary>
-        /// Create a buffered enumerable.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="This"></param>
-        /// <returns></returns>
-        [DebuggerStepThrough]
-        public static IEnumerable<T> Buffer<T>(this IEnumerable<T> This) 
-        {
             // TODO: Shouldn't this be faster?
             //if (This is ICollection<T>)
             //    return This.ToArray();
             //else
-                return This.ToList();
+            return This.ToList();
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace System.Collections.Generic
             }
             return max;
         }
-        
+
         /// <summary>
         /// Compute the hash of an ordered IEnumerable.
         /// </summary>
@@ -316,7 +316,7 @@ namespace System.Collections.Generic
         {
             int hash = 0;
             foreach (T i in This)
-                hash = hash ^ i.GetHashCode();
+                hash ^= i.GetHashCode();
             return hash;
         }
 

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 
 namespace ComputerAlgebra
 {
@@ -39,22 +37,19 @@ namespace ComputerAlgebra
         }
         public override int CompareTo(Expression R)
         {
-            FiniteSet RS = R as FiniteSet;
-            if (!ReferenceEquals(RS, null))
+            if (R is FiniteSet RS)
                 return members.LexicalCompareTo(RS.Members);
-
             return base.CompareTo(R);
         }
 
         public override bool Equals(Expression E)
         {
-            FiniteSet S = E as FiniteSet;
-            if (ReferenceEquals(S, null)) return base.Equals(E);
-
-            return Members.SequenceEqual(S.Members);
+            if (E is FiniteSet S)
+                return Members.SequenceEqual(S.Members);
+            return base.Equals(E);
         }
         public override int GetHashCode() { return Members.UnorderedHashCode(); }
-        
+
         public static FiniteSet Union(FiniteSet A, FiniteSet B) { return FiniteSet.New(A.Members.Union(B.Members)); }
         public static FiniteSet Intersection(FiniteSet A, FiniteSet B) { return FiniteSet.New(A.Members.Intersect(B.Members)); }
     }

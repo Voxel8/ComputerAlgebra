@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace ComputerAlgebra
 {
@@ -26,7 +23,7 @@ namespace ComputerAlgebra
             new SubstituteTransform("D[ArcSec[u], x]", "D[u, x]/(Abs[u]*Sqrt[u^2 - 1])"),
             new SubstituteTransform("D[ArcCsc[u], x]", "-D[u, x]/(Abs[u]*Sqrt[u^2 - 1])"),
             new SubstituteTransform("D[ArcCot[u], x]", "-D[u, x]/(u^2 + 1)"),
-            
+
             new SubstituteTransform("D[Sinh[u], x]", "Cosh[u]*D[u, x]"),
             new SubstituteTransform("D[Cosh[u], x]", "Sinh[u]*D[u, x]"),
             new SubstituteTransform("D[Tanh[u], x]", "Sech[u]^2*D[u, x]"),
@@ -44,6 +41,7 @@ namespace ComputerAlgebra
             new SubstituteTransform("D[Abs[u], x]", "Sign[u]*D[u, x]"),
             new SubstituteTransform("D[Sign[u], x]", "0"),
             new SubstituteTransform("D[Exp[u], x]", "Exp[u]*D[u, x]"),
+            //new SubstituteTransform("D[Sqrt[u], x]", "D[u, x]/(2*Sqrt[u])"),
             new SubstituteTransform("D[Ln[u], x]", "D[u, x]/u"),
             new SubstituteTransform("D[I[u, x], x]", "u"),
             new SubstituteTransform("D[If[c, t, f], x]", "If[c, D[t, x], D[f, x]]"),
@@ -58,48 +56,42 @@ namespace ComputerAlgebra
 
         public static Expression Transform(Expression f, Expression x) { return new DifferentiateTransform(x).Visit(f); }
 
-        public override Expression Visit(Expression E) 
+        protected override Expression VisitSum(Sum A)
         {
-            if (x.Equals(E))
-                return 1;
-            else if (!E.DependsOn(x))
-                return 0;
-            else
-                return base.Visit(E);
-        }
-
-        protected override Expression VisitSum(Sum A) { return Sum.New(A.Terms.Select(i => Visit(i)).Where(i => !i.EqualsZero())); }
-
-        protected Expression ProductRule(Expression L, IEnumerable<Expression> R)
-        {
-            if (R.Empty())
-                return Visit(L);
-
-            bool Lx = L.DependsOn(x);
-            bool Rx = R.DependsOn(x);
-
-            if (Lx && Rx)
-            {
-                // Product rule.
-                return Sum.New(
-                    Product.New(new Expression[] { Visit(L) }.Concat(R)),
-                    Product.New(L, ProductRule(R.First(), R.Skip(1)))).Evaluate();
-            }
-            else if (!Lx)
-            {
-                // L is constant w.r.t. x.
-                return Product.New(L, ProductRule(R.First(), R.Skip(1))).Evaluate();
-            }
-            else
-            {
-                // R is constant w.r.t. x.
-                return Product.New(R.Append(Visit(L))).Evaluate();
-            }
+            List<Expression> terms = new List<Expression>();
+            foreach (Expression i in A.Terms)
+                terms.Add(Visit(i));
+            return EvaluateVisitor.EvaluateSum(terms);
         }
 
         protected override Expression VisitProduct(Product M)
         {
-            return ProductRule(M.Terms.First(), M.Terms.Skip(1));
+            List<Expression> independent = new List<Expression>();
+            List<Expression> dependent = new List<Expression>();
+            foreach (Expression i in M.Terms)
+            {
+                if (i.DependsOn(x))
+                    dependent.Add(i);
+                else
+                    independent.Add(i);
+            }
+            if (dependent.Count == 0)
+                return 0;
+
+            List<Expression> products = new List<Expression>(dependent.Count);
+            foreach (Expression i in dependent)
+            {
+                List<Expression> terms = new List<Expression>(dependent.Count);
+                foreach (Expression j in dependent)
+                {
+                    if (ReferenceEquals(i, j))
+                        terms.Add(Visit(i));
+                    else
+                        terms.Add(j);
+                }
+                products.Add(Product.New(terms));
+            }
+            return Product.New(Product.New(independent), Sum.New(products)).Evaluate();
         }
 
         protected override Expression VisitPower(Power P)
@@ -140,9 +132,14 @@ namespace ComputerAlgebra
             return base.VisitUnary(U);
         }
 
-        protected override Expression VisitUnknown(Expression E) 
-        { 
-            return rules.Transform(Call.D(E, x)); 
+        protected override Expression VisitUnknown(Expression E)
+        {
+            if (E.Equals(x))
+                return 1;
+            else if (E.DependsOn(x))
+                return rules.Transform(Call.D(E, x));
+            else
+                return 0;
         }
     }
 

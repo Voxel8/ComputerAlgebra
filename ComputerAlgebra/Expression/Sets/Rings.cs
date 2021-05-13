@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace ComputerAlgebra
 {
@@ -11,22 +7,20 @@ namespace ComputerAlgebra
         private int order = 0;
         // Helper to determine ordering of rings.
         protected int Order { get { return order; } }
-        
+
         protected Ring(int Order) { order = Order; }
-        
+
         public override sealed IEnumerable<Atom> Atoms { get { yield break; } }
 
         public override int CompareTo(Expression R)
         {
-            Ring RR = R as Ring;
-            if (!ReferenceEquals(RR, null))
+            if (R is Ring RR)
                 return Order.CompareTo(RR.Order);
             return base.CompareTo(R);
         }
         public override bool Equals(Expression E)
         {
-            Ring R = E as Ring;
-            if (!ReferenceEquals(R, null))
+            if (E is Ring R)
                 return Order.Equals(R.Order);
             return base.Equals(E);
         }

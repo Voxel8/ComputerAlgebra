@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ComputerAlgebra
 {
@@ -68,7 +66,7 @@ namespace ComputerAlgebra
         /// Get the right operand of this binary expression.
         /// </summary>
         public Expression Right { get { return r; } }
-        
+
         /// <summary>
         /// Determine if this operator expression is commutative.
         /// </summary>
@@ -77,7 +75,7 @@ namespace ComputerAlgebra
         /// Determine if this operator expression is a logic operation.
         /// </summary>
         public bool IsLogicOp { get { return IsLogic(op); } }
-        
+
         protected Binary(Operator Op, Expression L, Expression R) { op = Op; l = L; r = R; }
 
         static public Expression Add(Expression L, Expression R) { return ComputerAlgebra.Sum.New(L, R); }
@@ -159,8 +157,7 @@ namespace ComputerAlgebra
 
         public override bool Matches(Expression E, MatchContext Matched)
         {
-            Binary BE = E as Binary;
-            if (!ReferenceEquals(BE, null) && BE.Operator == Operator)
+            if (E is Binary BE && BE.Operator == Operator)
                 return Matched.TryMatch(() => Left.Matches(BE.Left, Matched) && Right.Matches(BE.Right, Matched));
 
             return false;
@@ -173,17 +170,14 @@ namespace ComputerAlgebra
         public override IEnumerable<Atom> Atoms { get { return Left.Atoms.Concat(Right.Atoms); } }
         public override bool Equals(Expression E)
         {
-            Binary B = E as Binary;
-            if (ReferenceEquals(B, null)) return base.Equals(E);
+            if (E is Binary B)
+                return Operator.Equals(B.Operator) && Left.Equals(B.Left) && Right.Equals(B.Right);
 
-            return Operator.Equals(B.Operator) &&
-                Left.Equals(B.Left) &&
-                Right.Equals(B.Right);
+            return base.Equals(E);
         }
         public override int CompareTo(Expression R)
         {
-            Binary RB = R as Binary;
-            if (!ReferenceEquals(RB, null))
+            if (R is Binary RB)
                 return LexicalCompareTo(
                     () => Operator.CompareTo(RB.Operator),
                     () => Left.CompareTo(RB.Left),

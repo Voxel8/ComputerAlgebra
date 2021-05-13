@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ComputerAlgebra
 {
@@ -23,12 +22,12 @@ namespace ComputerAlgebra
         }
 
         public Expression Variable { get { return variable; } }
-        
+
         /// <summary>
         /// Get the coefficients of this Polynomial.
         /// </summary>
         public IEnumerable<KeyValuePair<int, Expression>> Coefficients { get { return coefficients.OrderBy(i => i.Key); } }
-        
+
         /// <summary>
         /// Find the degree of this Polynomial.
         /// </summary>
@@ -43,7 +42,7 @@ namespace ComputerAlgebra
 
         private Polynomial(IEnumerable<KeyValuePair<int, Expression>> Coefficients, Expression Variable)
         {
-            coefficients = new DefaultDictionary<int,Expression>(0);
+            coefficients = new DefaultDictionary<int, Expression>(0);
             foreach (KeyValuePair<int, Expression> i in Coefficients)
                 coefficients.Add(i.Key, i.Value);
             variable = Variable;
@@ -82,7 +81,7 @@ namespace ComputerAlgebra
 
             return new Polynomial(P, x);
         }
-                
+
         public Expression Factor()
         {
             // Check if there is a simple factor of x.
@@ -128,10 +127,9 @@ namespace ComputerAlgebra
 
         public override bool Equals(Expression E)
         {
-            Polynomial P = E as Polynomial;
-            if (ReferenceEquals(P, null)) return base.Equals(E);
-            
-            return Equals(P);
+            if (E is Polynomial P)
+                return Equals(P);
+            return base.Equals(E);
         }
         public override int GetHashCode() { return coefficients.OrderedHashCode() ^ variable.GetHashCode(); }
 

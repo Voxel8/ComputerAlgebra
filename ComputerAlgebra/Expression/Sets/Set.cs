@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 
 namespace ComputerAlgebra
 {
@@ -27,10 +25,9 @@ namespace ComputerAlgebra
 
         public static IEnumerable<Expression> MembersOf(Expression E)
         {
-            if (E is Set)
-                return (E as Set).Members;
-            else
-                return new[] { E };
+            if (E is Set S)
+                return S.Members;
+            return new[] { E };
         }
     }
 }

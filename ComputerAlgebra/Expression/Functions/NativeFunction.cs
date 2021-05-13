@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection;
-using System.Diagnostics;
 
 namespace ComputerAlgebra
 {
@@ -15,7 +13,7 @@ namespace ComputerAlgebra
     {
         public NoSubstitute() { }
     }
-    
+
     /// <summary>
     /// Function defined by a native function.
     /// </summary>
@@ -36,10 +34,10 @@ namespace ComputerAlgebra
         public override IEnumerable<Variable> Parameters { get { return Method.GetParameters().Select(i => Variable.New(i.Name)); } }
 
         protected NativeFunction(string Name, object This, MethodInfo Method)
-            : base(Name) 
+            : base(Name)
         {
             _this = This;
-            method = Method; 
+            method = Method;
         }
 
         /// <summary>
@@ -89,7 +87,7 @@ namespace ComputerAlgebra
         {
             return Method.GetParameters().Length == Args.Count();
         }
-        
+
         public override Expression Substitute(Call C, IDictionary<Expression, Expression> x0, bool IsTransform)
         {
             if (IsTransform)
@@ -118,13 +116,13 @@ namespace ComputerAlgebra
             else
                 return ComputerAlgebra.Substitute.New(C, late.Count > 1 ? (Expression)Set.New(late) : late.Single());
         }
-        
+
         public override bool Equals(Expression E)
         {
-            NativeFunction F = E as NativeFunction;
-            if (ReferenceEquals(F, null)) return base.Equals(E);
+            if (E is NativeFunction F)
+                return Equals(method, F.method) && Equals(_this, F._this);
 
-            return Equals(method, F.method) && Equals(_this, F._this);
+            return base.Equals(E);
         }
         public override int GetHashCode() { return method.GetHashCode(); }
     }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace ComputerAlgebra
+﻿namespace ComputerAlgebra
 {
     /// <summary>
     /// Visits an expression.
@@ -23,21 +18,19 @@ namespace ComputerAlgebra
         protected virtual T VisitPower(Power P) { return VisitBinary(P); }
         protected virtual T VisitCall(Call F) { return VisitUnknown(F); }
         protected virtual T VisitMatrix(Matrix A) { return VisitUnknown(A); }
-        protected virtual T VisitIndex(Index I) { return VisitUnknown(I); }
 
         public virtual T Visit(Expression E)
         {
-            if (E is Sum) return VisitSum(E as Sum);
-            else if (E is Product) return VisitProduct(E as Product);
-            else if (E is Constant) return VisitConstant(E as Constant);
-            else if (E is Variable) return VisitVariable(E as Variable);
-            else if (E is Set) return VisitSet(E as Set);
-            else if (E is Power) return VisitPower(E as Power);
-            else if (E is Binary) return VisitBinary(E as Binary);
-            else if (E is Unary) return VisitUnary(E as Unary);
-            else if (E is Call) return VisitCall(E as Call);
-            else if (E is Matrix) return VisitMatrix(E as Matrix);
-            else if (E is Index) return VisitIndex(E as Index);
+            if (E is Sum sum) return VisitSum(sum);
+            else if (E is Product product) return VisitProduct(product);
+            else if (E is Constant constant) return VisitConstant(constant);
+            else if (E is Call call) return VisitCall(call);
+            else if (E is Variable variable) return VisitVariable(variable);
+            else if (E is Power power) return VisitPower(power);
+            else if (E is Binary binary) return VisitBinary(binary);
+            else if (E is Unary unary) return VisitUnary(unary);
+            else if (E is Matrix matrix) return VisitMatrix(matrix);
+            else if (E is Set set) return VisitSet(set);
             else return VisitUnknown(E);
         }
     }

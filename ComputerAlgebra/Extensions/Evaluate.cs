@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Reflection;
 
 namespace ComputerAlgebra
 {
@@ -15,9 +13,6 @@ namespace ComputerAlgebra
         public IEnumerable<Exception> Exceptions { get { return exceptions; } }
 
         public EvaluateVisitor() { }
-
-        // In the case of revisiting an expression, just return it to avoid stack overflow.
-        protected override Expression Revisit(Expression E) { return E; }
 
         public static Expression EvaluateSum(IEnumerable<Expression> Terms)
         {
@@ -36,7 +31,7 @@ namespace ComputerAlgebra
                 {
                     // Find constant term.
                     Constant coeff = Product.TermsOf(i).OfType<Constant>().FirstOrDefault();
-                    if (!ReferenceEquals(coeff, null))
+                    if (!(coeff is null))
                         terms[Product.New(Product.TermsOf(i).ExceptUnique(coeff, Expression.RefComparer))] += (Real)coeff;
                     else
                         terms[i] += 1;
@@ -55,7 +50,7 @@ namespace ComputerAlgebra
         {
             return EvaluateSum(A.Terms.SelectMany(i => Sum.TermsOf(Visit(i))));
         }
-        
+
         // Combine like terms and multiply constants.
         protected override Expression VisitProduct(Product M)
         {
@@ -71,13 +66,12 @@ namespace ComputerAlgebra
                     Real Ci = (Real)i;
                     // Early exit if 0.
                     if (Ci.EqualsZero())
-                        return 0;
+                        return i;  // Zero
                     C *= Ci;
                 }
                 else
                 {
-                    Power Pi = i as Power;
-                    if (!ReferenceEquals(Pi, null) && Pi.Right is Constant)
+                    if (i is Power Pi && Pi.Right is Constant)
                         terms[Pi.Left] += (Real)Pi.Right;
                     else
                         terms[i] += 1;
@@ -89,7 +83,7 @@ namespace ComputerAlgebra
             {
                 // Find a sum term that has a constant term to distribute into.
                 KeyValuePair<Expression, Real> A = terms.FirstOrDefault(i => Real.Abs(i.Value).EqualsOne() && i.Key is Sum);
-                if (!ReferenceEquals(A.Key, null))
+                if (A.Key is object)
                 {
                     terms.Remove(A.Key);
                     terms[ExpandExtension.Distribute(C ^ A.Value, A.Key)] += A.Value;
@@ -113,39 +107,12 @@ namespace ComputerAlgebra
                 if (C.Target.CanCall(C.Arguments))
                 {
                     Expression call = C.Target.Call(C.Arguments);
-                    if (!ReferenceEquals(call, null))
+                    if (call is object)
                         return call;
                 }
             }
             catch (Exception Ex) { exceptions.Add(Ex); }
             return C;
-        }
-
-        protected override Expression VisitIndex(Index I)
-        {
-            I = (Index)base.VisitIndex(I);
-            
-            // We can only evaluate index expressions with constant integer indices.
-            if (!I.Indices.All(i => i.IsInteger()))
-                return I;
-
-            // Index a matrix.
-            Matrix M = I.Target as Matrix;
-            if (!ReferenceEquals(M, null))
-            {
-                switch (I.Indices.Count())
-                {
-                    case 1: return M[(int)I.Indices.ElementAt(0)];
-                    case 2: return M[(int)I.Indices.ElementAt(0), (int)I.Indices.ElementAt(1)];
-                }
-            }
-
-            // Index an array.
-            Array A = I.Target as Array;
-            if (!ReferenceEquals(A, null))
-                return Constant.New(A.Value.GetValue(I.Indices.Select(i => (int)i).ToArray()));
-
-            return I;
         }
 
         protected override Expression VisitPower(Power P)
@@ -156,14 +123,12 @@ namespace ComputerAlgebra
             if (R.IsInteger())
             {
                 // Transform (x*y)^z => x^z*y^z if z is an integer.
-                Product M = L as Product;
-                if (!ReferenceEquals(M, null))
+                if (L is Product M)
                     return Visit(Product.New(M.Terms.Select(i => Power.New(i, R))));
             }
 
             // Transform (x^y)^z => x^(y*z) if z is an integer.
-            Power LP = L as Power;
-            if (!ReferenceEquals(LP, null))
+            if (L is Power LP)
             {
                 L = LP.Left;
                 R = Visit(Product.New(P.Right, LP.Right));
@@ -171,20 +136,20 @@ namespace ComputerAlgebra
 
             // Handle identities.
             Real? LR = AsReal(L);
-            if (EqualsZero(LR)) return 0;
-            if (EqualsOne(LR)) return 1;
+            if (EqualsZero(LR)) return L;
+            if (EqualsOne(LR)) return L;
 
             Real? RR = AsReal(R);
             if (EqualsZero(RR)) return 1;
             if (EqualsOne(RR)) return L;
 
             // Evaluate result.
-            if (LR != null && RR != null)
+            if (LR is object && RR is object)
                 return Constant.New(LR.Value ^ RR.Value);
             else
                 return Power.New(L, R);
         }
-        
+
         protected override Expression VisitBinary(Binary B)
         {
             Expression L = Visit(B.Left);
@@ -192,7 +157,12 @@ namespace ComputerAlgebra
 
             // Evaluate substitution operators.
             if (B is Substitute)
-                return Visit(L.Substitute(Set.MembersOf(R).Cast<Arrow>()));
+            {
+                Expression result = L.Substitute(Set.MembersOf(R).Cast<Arrow>());
+                if (result.Equals(B))
+                    return B;
+                return Visit(result);
+            }
 
             Real? LR = AsReal(L);
             Real? RR = AsReal(R);
@@ -205,12 +175,12 @@ namespace ComputerAlgebra
                     case Operator.Equal: return Constant.New(LR.Value == RR.Value);
                     case Operator.NotEqual: return Constant.New(LR.Value != RR.Value);
                     case Operator.Less: return Constant.New(LR.Value < RR.Value);
-                    case Operator.Greater: return Constant.New(LR.Value <= RR.Value);
-                    case Operator.LessEqual: return Constant.New(LR.Value > RR.Value);
+                    case Operator.LessEqual: return Constant.New(LR.Value <= RR.Value);
+                    case Operator.Greater: return Constant.New(LR.Value > RR.Value);
                     case Operator.GreaterEqual: return Constant.New(LR.Value >= RR.Value);
-                    case Operator.ApproxEqual: return Constant.New(
-                        LR.Value == RR.Value || 
-                        Real.Abs(LR.Value - RR.Value) < 1e-12 * Real.Max(Real.Abs(LR.Value), Real.Abs(RR.Value)));
+                    case Operator.ApproxEqual:
+                        return Constant.New(
+                            Real.Abs(LR.Value - RR.Value) <= 1e-12 * Real.Max(Real.Abs(LR.Value), Real.Abs(RR.Value)));
                 }
             }
 
@@ -218,16 +188,20 @@ namespace ComputerAlgebra
             switch (B.Operator)
             {
                 case Operator.And:
-                    if (IsFalse(LR) || IsFalse(RR))
-                        return Constant.New(false);
+                    if (IsFalse(LR))
+                        return L;
+                    else if (IsFalse(RR))
+                        return R;
                     else if (IsTrue(LR) && IsTrue(RR))
-                        return Constant.New(true);
+                        return L;
                     break;
                 case Operator.Or:
-                    if (IsTrue(LR) || IsTrue(RR))
-                        return Constant.New(true);
+                    if (IsTrue(LR))
+                        return L;
+                    else if (IsTrue(RR))
+                        return R;
                     else if (IsFalse(LR) && IsFalse(RR))
-                        return Constant.New(false);
+                        return L;
                     break;
 
                 case Operator.Equal:
@@ -280,10 +254,10 @@ namespace ComputerAlgebra
                 return Default;
         }
 
-        protected static bool EqualsZero(Real? R) { return R != null ? R.Value.EqualsZero() : false; }
-        protected static bool EqualsOne(Real? R) { return R != null ? R.Value.EqualsOne() : false; }
-        protected static bool IsTrue(Real? R) { return R != null ? !R.Value.EqualsZero() : false; }
-        protected static bool IsFalse(Real? R) { return R != null ? R.Value.EqualsZero() : false; }
+        protected static bool EqualsZero(Real? R) { return R != null && R.Value.EqualsZero(); }
+        protected static bool EqualsOne(Real? R) { return R != null && R.Value.EqualsOne(); }
+        protected static bool IsTrue(Real? R) { return R != null && !R.Value.EqualsZero(); }
+        protected static bool IsFalse(Real? R) { return R != null && R.Value.EqualsZero(); }
     }
 
     public static class EvaluateExtension
@@ -321,7 +295,7 @@ namespace ComputerAlgebra
         /// <returns>The evaluated expression.</returns>
         public static Expression Evaluate(this Expression f, Expression x, Expression x0) { return f.Evaluate(new Dictionary<Expression, Expression> { { x, x0 } }); }
 
-        public static IEnumerable<Expression> Evaluate(this IEnumerable<Expression> f, IDictionary<Expression, Expression> x0) 
+        public static IEnumerable<Expression> Evaluate(this IEnumerable<Expression> f, IDictionary<Expression, Expression> x0)
         {
             EvaluateVisitor V = new EvaluateVisitor();
             return f.Select(i => V.Visit(i.Substitute(x0)));

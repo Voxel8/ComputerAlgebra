@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace ComputerAlgebra
+﻿namespace ComputerAlgebra
 {
     public class Power : Binary
     {
@@ -17,8 +12,8 @@ namespace ComputerAlgebra
         /// <returns></returns>
         public static Expression ExponentOf(Expression x)
         {
-            if (x is Power)
-                return ((Power)x).Right;
+            if (x is Power p)
+                return p.Right;
             return 1;
         }
 
@@ -51,8 +46,7 @@ namespace ComputerAlgebra
             if (E.EqualsZero() && Left.Matches(0, Matched))
                 return true;
 
-            Binary PE = E as Power;
-            if (!ReferenceEquals(PE, null) && Matched.TryMatch(() => Left.Matches(PE.Left, Matched) && Right.Matches(PE.Right, Matched)))
+            if (E is Power PE && Matched.TryMatch(() => Left.Matches(PE.Left, Matched) && Right.Matches(PE.Right, Matched)))
                 return true;
 
             // If the exponent matches 1, E can match left.
@@ -70,8 +64,7 @@ namespace ComputerAlgebra
             if (Left.Equals(R))
                 return Right.CompareTo(1);
 
-            Power RP = R as Power;
-            if (!ReferenceEquals(RP, null))
+            if (R is Power RP)
                 return LexicalCompareTo(
                     () => Left.CompareTo(RP.Left),
                     () => Right.CompareTo(RP.Right));

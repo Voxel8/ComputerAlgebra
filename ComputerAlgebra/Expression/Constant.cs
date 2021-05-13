@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ComputerAlgebra
 {
@@ -12,21 +9,28 @@ namespace ComputerAlgebra
 
         protected Constant(Real x) { this.x = x; }
 
-        private static readonly Constant One = new Constant(1);
+        private static readonly Constant NegativeOne = new Constant(-1);
         private static readonly Constant Zero = new Constant(0);
+        private static readonly Constant One = new Constant(1);
 
-        public static Constant New(int x) { return new Constant(x); }
+        public static Constant New(int x)
+        {
+            if (x == -1) return NegativeOne;
+            if (x == 0) return Zero;
+            if (x == 1) return One;
+            return new Constant(x);
+        }
         public static Constant New(double x) { return new Constant(x); }
         public static Constant New(decimal x) { return new Constant(x); }
         public static Constant New(Real x) { return new Constant(x); }
         public static Constant New(bool x) { return x ? One : Zero; }
-        public static Expression New(object x) 
+        public static Expression New(object x)
         {
-            if (x.GetType() == typeof(int)) return New((int)x);
-            if (x.GetType() == typeof(double)) return New((double)x);
-            if (x.GetType() == typeof(decimal)) return New((decimal)x);
-            if (x.GetType() == typeof(bool)) return New((bool)x);
-            if (x.GetType() == typeof(Real)) return New((Real)x);
+            if (x is int i) return New(i);
+            if (x is double dbl) return New(dbl);
+            if (x is decimal d) return New(d);
+            if (x is bool b) return New(b);
+            if (x is Real r) return New(r);
             throw new InvalidCastException();
         }
 
@@ -37,7 +41,7 @@ namespace ComputerAlgebra
         public override bool IsTrue() { return !EqualsZero(); }
 
         public static implicit operator Real(Constant x) { return x.x; }
-        
+
         public static implicit operator Constant(Real x) { return Constant.New(x); }
         public static implicit operator Constant(BigRational x) { return Constant.New(x); }
         public static implicit operator Constant(decimal x) { return Constant.New(x); }
@@ -53,18 +57,15 @@ namespace ComputerAlgebra
         // Note that this is *not* an arithmetic comparison, it is a canonicalization ordering.
         public override int CompareTo(Expression R)
         {
-            Constant RC = R as Constant;
-            if (!ReferenceEquals(RC, null))
+            if (R is Constant RC)
                 return Real.Abs(RC.Value).CompareTo(Real.Abs(Value));
-
             return base.CompareTo(R);
         }
         public override bool Equals(Expression E)
         {
-            Constant C = E as Constant;
-            if (ReferenceEquals(C, null)) return base.Equals(E);
-
-            return Value.Equals(C.Value);
+            if (E is Constant C)
+                return Value.Equals(C.Value);
+            return base.Equals(E);
         }
     }
 }

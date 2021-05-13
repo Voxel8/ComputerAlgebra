@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace ComputerAlgebra
 {
@@ -14,7 +11,7 @@ namespace ComputerAlgebra
     {
         protected IEnumerable<Expression> terms;
         public override IEnumerable<Expression> Terms { get { return terms; } }
-        
+
         private Multiply(IEnumerable<Expression> Terms) { terms = Terms; }
 
         /// <summary>
@@ -41,8 +38,8 @@ namespace ComputerAlgebra
         {
             foreach (Expression i in Terms)
             {
-                if (i is Product)
-                    foreach (Expression j in FlattenTerms(((Product)i).Terms))
+                if (i is Product product)
+                    foreach (Expression j in FlattenTerms(product.Terms))
                         yield return j;
                 else if (!i.EqualsOne())
                     yield return i;

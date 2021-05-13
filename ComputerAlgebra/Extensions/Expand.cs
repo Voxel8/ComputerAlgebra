@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ComputerAlgebra
 {
@@ -78,7 +77,7 @@ namespace ComputerAlgebra
             int n = Power.IntegralExponentOf(f);
 
             // If this is an an integral constant negative exponent, attempt to use partial fractions.
-            if (n < 0 && !ReferenceEquals(x, null))
+            if (n < 0 && !(x is null))
             {
                 Expression b = f.Left.Factor(x);
                 if (n != -1)
@@ -107,11 +106,11 @@ namespace ComputerAlgebra
         private static Expression ExpandMultiply(Expression f, Expression x)
         {
             // If the denominator is multiplication, expand partial fractions.
-            if (!ReferenceEquals(x, null))
+            if (!(x is null))
             {
                 Expression d = Product.Denominator(f).Factor(x);
-                if (d is Product)
-                    return ExpandPartialFractions(Product.Numerator(f), (Product)d, x);
+                if (d is Product product)
+                    return ExpandPartialFractions(Product.Numerator(f), product, x);
             }
 
             // If f contains an add expression, distribute it.
@@ -131,18 +130,18 @@ namespace ComputerAlgebra
         /// </summary>
         /// <param name="x"></param>
         /// <returns></returns>
-        public static Expression Expand(this Expression f, Expression x) 
+        public static Expression Expand(this Expression f, Expression x)
         {
             if (f is Product)
                 return ExpandMultiply(f, x);
-            else if (f is Sum)
-                return Sum.New(((Sum)f).Terms.Select(i => i.Expand(x)));
-            else if (f is Power)
-                return ExpandPower((Power)f, x);
-            else if (f is Binary)
-                return Binary.New(((Binary)f).Operator, ((Binary)f).Left.Expand(), ((Binary)f).Right.Expand());
-            else if (f is Unary)
-                return Unary.New(((Unary)f).Operator, ((Unary)f).Operand.Expand());
+            else if (f is Sum sum)
+                return Sum.New(sum.Terms.Select(i => i.Expand(x)));
+            else if (f is Power power)
+                return ExpandPower(power, x);
+            else if (f is Binary binary)
+                return Binary.New(binary.Operator, binary.Left.Expand(x), binary.Right.Expand(x));
+            else if (f is Unary unary)
+                return Unary.New(unary.Operator, unary.Operand.Expand());
 
             return f;
         }

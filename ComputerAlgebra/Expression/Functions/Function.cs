@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Diagnostics;
-using System.Reflection;
 
 namespace ComputerAlgebra
 {
@@ -26,7 +22,7 @@ namespace ComputerAlgebra
         /// <returns></returns>
         public abstract Expression Call(IEnumerable<Expression> Args);
         public Expression Call(params Expression[] Args) { return Call(Args.AsEnumerable()); }
-        
+
         /// <summary>
         /// Check if this function could be called with the given parameters.
         /// </summary>
@@ -44,8 +40,7 @@ namespace ComputerAlgebra
         /// <returns></returns>
         public virtual bool CallMatches(IEnumerable<Expression> Arguments, Expression E, MatchContext Matched)
         {
-            Call EF = E as Call;
-            if (!ReferenceEquals(EF, null))
+            if (E is Call EF)
             {
                 if (!Equals(EF.Target))
                     return false;
@@ -66,10 +61,10 @@ namespace ComputerAlgebra
         /// <returns></returns>
         public virtual bool CallEquals(IEnumerable<Expression> Arguments, Expression E)
         {
-            Call C = E as Call;
-            if (ReferenceEquals(C, null)) return false;
+            if (E is Call C)
+                return Equals(C.Target) && Arguments.SequenceEqual(C.Arguments);
 
-            return Equals(C.Target) && Arguments.SequenceEqual(C.Arguments);
+            return false;
         }
 
         /// <summary>

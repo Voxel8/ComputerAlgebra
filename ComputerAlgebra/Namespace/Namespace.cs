@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Reflection;
-using System.Numerics;
 
 namespace ComputerAlgebra
 {
@@ -41,10 +38,10 @@ namespace ComputerAlgebra
         /// </summary>
         /// <param name="Name"></param>
         /// <returns></returns>
-        public Expression Resolve(string Name) 
+        public Expression Resolve(string Name)
         {
             Expression resolved = LookupName(Name).SingleOrDefault();
-            if (!ReferenceEquals(resolved, null))
+            if (!(resolved is null))
                 return resolved;
             throw new UnresolvedName(Name);
         }
@@ -57,12 +54,12 @@ namespace ComputerAlgebra
         public Function Resolve(string Name, IEnumerable<Expression> Params)
         {
             Function resolved = LookupFunction(Name, Params).SingleOrDefault();
-            if (!ReferenceEquals(resolved, null))
+            if (!(resolved is null))
                 return resolved;
             throw new UnresolvedName(Name);
         }
         public Function Resolve(string Name, params Expression[] Params) { return Resolve(Name, Params.AsEnumerable()); }
-        
+
         private static GlobalNamespace global = new GlobalNamespace();
         /// <summary>
         /// Get the global namespace.

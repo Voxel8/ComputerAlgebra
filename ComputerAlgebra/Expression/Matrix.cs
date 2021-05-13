@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ComputerAlgebra
 {
@@ -83,7 +81,7 @@ namespace ComputerAlgebra
             return A;
         }
         public static Matrix New(int N, IEnumerable<Expression> Elements) { return New(N, N, Elements); }
-        public static Matrix New(IEnumerable<IEnumerable<Expression>> Elements) 
+        public static Matrix New(IEnumerable<IEnumerable<Expression>> Elements)
         {
             Matrix A = new Matrix(Elements.Count(), Elements.Max(i => i.Count()));
 
@@ -179,7 +177,7 @@ namespace ComputerAlgebra
 
         private Matrix RowReduce(Matrix Aug)
         {
-            Matrix This = new Matrix(this);
+            Matrix reduced = new Matrix(this);
 
             // Gaussian elimination, .m[ A I ] ~ .m[ I, A^-1 ]
             for (int i = 0; i < M; ++i)
@@ -187,20 +185,20 @@ namespace ComputerAlgebra
                 // Find pivot row.
                 int p;
                 for (p = i; p < N; ++p)
-                    if (!This.m[p, i].EqualsZero())
+                    if (!reduced.m[p, i].EqualsZero())
                         break;
                 if (p >= N)
                     throw new ArgumentException("Singular matrix");
 
                 // Swap pivot row with row i.
-                SwapRows(This, i, p);
-                if (!ReferenceEquals(Aug, null))
+                SwapRows(reduced, i, p);
+                if (Aug is object)
                     SwapRows(Aug, i, p);
 
                 // Put a 1 in the pivot position.
-                Expression s = 1 / This.m[i, i];
-                ScaleRow(This, i, s);
-                if (!ReferenceEquals(Aug, null))
+                Expression s = 1 / reduced.m[i, i];
+                ScaleRow(reduced, i, s);
+                if (Aug is object)
                     ScaleRow(Aug, i, s);
 
                 // Zero the pivot column elsewhere.
@@ -208,15 +206,15 @@ namespace ComputerAlgebra
                 {
                     if (i != p)
                     {
-                        Expression a = -This.m[p, i];
-                        ScaleAddRow(This, i, a, p);
-                        if (!ReferenceEquals(Aug, null))
+                        Expression a = -reduced.m[p, i];
+                        ScaleAddRow(reduced, i, a, p);
+                        if (Aug is object)
                             ScaleAddRow(Aug, i, a, p);
                     }
                 }
             }
 
-            return This;
+            return reduced;
         }
 
         public Matrix RowReduce()
@@ -286,7 +284,7 @@ namespace ComputerAlgebra
         }
         IEnumerator<Expression> IEnumerable<Expression>.GetEnumerator() { return new Enumerator(this); }
         IEnumerator IEnumerable.GetEnumerator() { return new Enumerator(this); }
-        
+
         public override int GetHashCode()
         {
             int hash = 33;
@@ -299,7 +297,7 @@ namespace ComputerAlgebra
         public override bool Equals(Expression E)
         {
             Matrix A = E as Matrix;
-            if (ReferenceEquals(M, null))
+            if (A is null)
                 return base.Equals(E);
 
             if (M != A.M || N != A.N)
@@ -316,7 +314,7 @@ namespace ComputerAlgebra
         public override bool Matches(Expression Expr, MatchContext Matched)
         {
             Matrix A = Expr as Matrix;
-            if (ReferenceEquals(A, null))
+            if (A is null)
                 return false;
 
             if (M != A.M || N != A.N)
